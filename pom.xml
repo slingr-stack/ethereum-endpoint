@@ -63,18 +63,6 @@
             <version>1.58.0.0</version>
         </dependency>
         <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>24.1-jre</version>
-        </dependency>
-        <!--<dependency>-->
-        <!--<groupId>org.web3j</groupId>-->
-        <!--<artifactId>core</artifactId>-->
-        <!--<version>3.3.1</version>-->
-        <!--</dependency>-->
-
-        <!-- Testing Modules -->
-        <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>${junit.version}</version>
