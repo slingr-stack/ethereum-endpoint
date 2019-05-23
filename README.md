@@ -14,7 +14,7 @@ The Ethereum endpoint allow to interact with the Ethereum blockchain. This is th
 It is important to look at [JSON RPC API](https://github.com/ethereum/wiki/wiki/JSON-RPC) as most of
 the Javascript API of the endpoint is based on it.
 
-For more information please refere to [docs](https://slingr-stack.github.io/platform/endpoints_ethereum.html)
+For more information please refer to [docs](https://slingr-stack.github.io/platform/endpoints_ethereum.html).
 
 ## About SLINGR
 
