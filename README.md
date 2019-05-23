@@ -1,4 +1,4 @@
-# Ethereum endpoint ![alt text](https://storage.googleapis.com/slingr-dev-platform/platform/endpoints/ethereum.png)
+# Ethereum endpoint
 
 ## Overview
 The Ethereum endpoint allow to interact with the Ethereum blockchain. This is the list of features:
