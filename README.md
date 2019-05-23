@@ -1,7 +1,7 @@
 # Ethereum endpoint
 
 ## Overview
-The Ethereum endpoint allow to interact with the Ethereum blockchain. This is the list of features:
+The Ethereum endpoint allows to interact with the Ethereum blockchain. This is the list of features:
 
 - Helpers to simplify calls to functions in smart contracts
 - Handling of events fired by smart contracts
