@@ -133,8 +133,15 @@ endpoint.utils.internalSendTransaction = function (options) {
     var rawTx = {
         nonce: options.nonce,
         to: options.to,
-        data: options.data
     };
+
+    if (options.data) {
+        rawTx['data'] = options.data;
+    }
+
+    if (options.value) {
+        rawTx['value'] = options.value;
+    }
 
     if (options.gasPrice) {
         rawTx['gasPrice'] = options.gasPrice;
@@ -396,6 +403,40 @@ endpoint.sendTransaction = function (aliasOrAddress, fnName, params, fromAddress
         options.nonce = endpoint.eth.transactionCount(fromAddress, 'pending');
     }
     options.to = endpoint.utils.isAddress(aliasOrAddress) ? aliasOrAddress : endpoint.utils.getContractAddressByAlias(aliasOrAddress);
+    options.data = data;
+    options.netId = endpoint.net.version();
+    options.from = fromAddress;
+    options.signMethod = signMethod;
+    endpoint.utils.internalSendTransaction(options);
+};
+
+/**
+ * Sends a transaction to send ether to the Ethereum network. It will sign the transaction using the given sign
+ * method (which could involved a UI plugin, like MetaMask), send it to the network and call callbacks as events
+ * happen.
+ *
+ * @param aliasOrAddress the alias or address to send the ether
+ * @param amount the amount of ether to send
+ * @param fromAddress origin account address
+ * @param signMethod the method used to sign the transaction, which is the name of the plugin, like 'metamask'
+ * @param options other Ethereum parameters needed for transaction like gas, gasPrice,
+ *                and callbacks: submitted, confirmed, error.
+ */
+endpoint.sendEther = function (aliasOrAddress, amount, fromAddress, signMethod, options) {
+    options = options || {};
+    params = params || [];
+    var data;
+    if (!fromAddress) {
+        throw 'Address must be specified for this call.';
+    }
+    if (!signMethod) {
+        throw 'Sign method must be specified for this call.';
+    }
+    if (!options.nonce) {
+        options.nonce = endpoint.eth.transactionCount(fromAddress, 'pending');
+    }
+    options.to = endpoint.utils.isAddress(aliasOrAddress) ? aliasOrAddress : endpoint.utils.getContractAddressByAlias(aliasOrAddress);
+    options.value = amount;
     options.data = data;
     options.netId = endpoint.net.version();
     options.from = fromAddress;

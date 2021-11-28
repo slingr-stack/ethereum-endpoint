@@ -405,6 +405,48 @@ app.endpoints.ethereum.sendTransaction(
 );
 ```
 
+### Send ether
+
+```js
+var res = app.endpoints.ethereum.sendEther(aliasOrAddress, amount, fromAddress, signMethod, options);
+```
+
+Very similar to how you can send a transaction to call a function in a contract, but in this case we need to send
+the amount (in hexadecimal) instead of the name of the function and the params. The rest is the same.
+
+Same:
+
+```js
+app.endpoints.ethereum.sendEther(
+  '0xb60e8dd61c5d32be8058bb8eb970870f07233155', 
+  '0x9184e72a', 
+  '0x590782dc744cb95662192bde0da32acf5e99d851',
+  'metamask',
+  {
+    submitted: function(msg, res) {
+      sys.logs.info('*** tx submitted');
+      sys.logs.info('*** msg: '+JSON.stringify(msg));
+      sys.logs.info('*** res: '+JSON.stringify(res));
+    },
+    confirmed: function(msg, res, receipt, events) {
+      sys.logs.info('*** tx confirmed');
+      sys.logs.info('*** msg: '+JSON.stringify(msg));
+      sys.logs.info('*** res: '+JSON.stringify(res));
+      sys.logs.info('*** receipt: '+JSON.stringify(receipt));
+      sys.logs.info('*** events: '+JSON.stringify(events));
+    },
+    error: function(msg, res, receipt) {
+      sys.logs.info('*** tx error');
+      sys.logs.info('*** msg: '+JSON.stringify(msg));
+      sys.logs.info('*** res: '+JSON.stringify(res));
+      if (receipt) {
+        sys.logs.info('*** receipt: '+JSON.stringify(receipt));
+      }
+    }
+  }
+);
+```
+
 ### Call function
 
 ```js
