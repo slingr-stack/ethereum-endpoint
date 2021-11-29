@@ -453,8 +453,6 @@ endpoint.sendTransaction = function (aliasOrAddress, fnName, params, fromAddress
  */
 endpoint.sendEther = function (aliasOrAddress, amount, fromAddress, signMethod, options) {
     options = options || {};
-    params = params || [];
-    var data;
     if (!fromAddress) {
         throw 'Address must be specified for this call.';
     }
@@ -466,7 +464,6 @@ endpoint.sendEther = function (aliasOrAddress, amount, fromAddress, signMethod, 
     }
     options.to = endpoint.utils.isAddress(aliasOrAddress) ? aliasOrAddress : endpoint.utils.getContractAddressByAlias(aliasOrAddress);
     options.value = amount;
-    options.data = data;
     options.netId = endpoint.net.version();
     options.from = fromAddress;
     options.signMethod = signMethod;
