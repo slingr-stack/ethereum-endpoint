@@ -365,6 +365,35 @@ endpoint.callFunction = function (aliasOrAddress, fnName, params, fromAddress) {
 };
 
 /**
+ * Estimates the needed gas to make a transaction. Keep in mind that this is just an estimation and real
+ * gas when the transaction is executed might be different.
+ *
+ * @param aliasOrAddress the alias or address of the contract in the app
+ * @param fnName the name of the function to execute
+ * @param params an array with the params of the function
+ * @param fromAddress origin account address
+ */
+endpoint.estimateTransaction = function (aliasOrAddress, fnName, params, fromAddress) {
+    var rawTx = {
+        to: endpoint.utils.isAddress(aliasOrAddress) ? aliasOrAddress : endpoint.utils.getContractAddressByAlias(aliasOrAddress),
+        from: fromAddress
+    };
+    var functionAbiDef = endpoint.utils.getFunctionDefFromABI(fnName, aliasOrAddress);
+    if (!functionAbiDef) {
+        throw 'Cannot find function [' + fnName + '] in ABI';
+    }
+    var data;
+    try {
+        data = endpoint._encodedFunction({ fnAbi: functionAbiDef, params: params});
+    } catch (e) {
+        throw 'There was a problem encoding params: ' + sys.exceptions.getMessage(e) + '. Code: ' + sys.exceptions.getCode(e);
+    }
+    rawTx.data = data;
+    var estimatedGas = endpoint.eth.estimateGas(rawTx);
+    return estimatedGas;
+};
+
+/**
  * Sends a transaction to the Ethereum network. It will sign the transaction using the given sign
  * method (which could involved a UI plugin, like MetaMask), send it to the network and call
  * callbacks as events happen.
