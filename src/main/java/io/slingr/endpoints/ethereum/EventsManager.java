@@ -187,7 +187,9 @@ public class EventsManager {
         if (topics != null && topicsList != null) {
             if (topicsList.size() > 0) {
                 Json abi = topics.get(topicsList.get(0));
-                result = ethereumHelper.processResult(abi, topicsList, data);
+                if (abi != null) {
+                    result = ethereumHelper.processResult(abi, topicsList, data);
+                }
             }
         }
         return result;
