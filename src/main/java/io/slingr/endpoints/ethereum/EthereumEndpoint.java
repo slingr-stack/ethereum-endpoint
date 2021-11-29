@@ -395,7 +395,7 @@ public class EthereumEndpoint extends HttpEndpoint {
                 body.isEmpty("gasPrice") ? null : longToBytesNoLeadZeroes(Long.parseUnsignedLong(ethereumHelper.removeHexStringToData(body.string("gasPrice")), 16)),
                 body.isEmpty("gas") ? null : longToBytesNoLeadZeroes(Long.parseUnsignedLong(ethereumHelper.removeHexStringToData(body.string("gas")), 16)),
                 body.isEmpty("to") ? null : Hex.decode(ethereumHelper.removeHexStringToData(body.string("to"))),
-                body.isEmpty("value") ? longToBytesNoLeadZeroes(Long.valueOf(0)) : longToBytesNoLeadZeroes(Long.parseUnsignedLong(ethereumHelper.removeHexStringToData(body.string("value")))),
+                body.isEmpty("value") ? longToBytesNoLeadZeroes(Long.valueOf(0)) : longToBytesNoLeadZeroes(Long.parseUnsignedLong(ethereumHelper.removeHexStringToData(body.string("value")), 16)),
                 body.isEmpty("data") ? null : Hex.decode(ethereumHelper.removeHexStringToData(body.string("data"))),
                 body.integer("netId")
         );
