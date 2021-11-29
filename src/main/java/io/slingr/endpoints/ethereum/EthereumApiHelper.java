@@ -44,7 +44,7 @@ public class EthereumApiHelper {
     public List<Json> getLogsByBlock(String hash) {
         Json body = this.getBody("eth_getLogs", Json.list().push(Json.map().set("blockHash", hash)));
         Json response = this.httpService.post(body);
-        return response != null ? response.jsons("result") : new ArrayList<>();
+        return response != null && response.jsons("result") != null ? response.jsons("result") : new ArrayList<>();
     }
 
     private Json getBody(String method, Json params) {
