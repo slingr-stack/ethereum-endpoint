@@ -204,7 +204,7 @@ public class TransactionManager {
 
     private List<String> getTransactionsInBlock(Block block) {
         Json res = ethereumApiHelper.getBlockByHash(block.getHash(), false);
-        List<String> transactions = res.strings("transactions");
+        List<String> transactions = res != null && res.strings("transactions") != null ? res.strings("transactions") : new ArrayList<>();
         return transactions;
     }
 
