@@ -123,6 +123,11 @@ public class TransactionManager {
                 long diff = block.getNumber() - tx.getBlockNumber();
                 if (Transaction.STATUS_CONFIRMED.equals(tx.getStatus()) && diff >= tx.getConfirmationBlocks()) {
                     Json receipt = ethereumApiHelper.getTransactionReceipt(txHash);
+                    if (receipt == null) {
+                        // sometimes, for some reason, the tx has the status confirmed but then when we look for the
+                        // receipt, it isn't there; we need to keep checking for this transaction in those cases
+                        continue;
+                    }
                     sendEvent(EVENT_TX_CONFIRMED, tx, receipt);
                     tx.setStatus(Transaction.STATUS_SENT);
                     tx.setReceipt(receipt);
