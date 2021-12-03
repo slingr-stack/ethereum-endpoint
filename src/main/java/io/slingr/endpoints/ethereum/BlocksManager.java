@@ -67,6 +67,10 @@ public class BlocksManager {
                 while (!lastBlocksHashes.contains(parentHash)
                         && newBlocks.size() < MAX_BLOCKS_DELAY) {
                     lastBlock = getBlockByHash(parentHash);
+                    if (lastBlock == null) {
+                        appLogger.warn("There were some issues polling fo new blocks. We will retry in ["+POLLING_WAIT_TIME+"] milliseconds");
+                        return;
+                    }
                     newBlocks.add(lastBlock);
                     parentHash = lastBlock.string("parentHash");
                 }
