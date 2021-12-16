@@ -61,6 +61,7 @@ endpoint.utils.getFunctionDefFromABI = function (fnName, aliasOrAddress) {
 };
 
 endpoint.utils.processSubmittedTransaction = function(msg, res) {
+    sys.utils.concurrency.unlock(msg.options.from);
     if (msg.options.submitted) {
         var func = 'var callback = ' + msg.options.submitted + ';'
             +'\ncallback(context.msg, context.res);';
@@ -109,6 +110,7 @@ endpoint.utils.processSubmittedTransaction = function(msg, res) {
 };
 
 endpoint.utils.processDeclinedTransaction = function(msg, res) {
+    sys.utils.concurrency.unlock(msg.options.from);
     if (msg.options.error) {
         if(!res){
             res = {};
@@ -122,6 +124,7 @@ endpoint.utils.processDeclinedTransaction = function(msg, res) {
 };
 
 endpoint.utils.processErrorTransaction = function(msg, res) {
+    sys.utils.concurrency.unlock(msg.options.from);
     if (msg.options.error) {
         var func = 'var callback = ' + msg.options.error + ';' +
             '\ncallback(context.msg, context.res);';
@@ -407,6 +410,7 @@ endpoint.estimateTransaction = function (aliasOrAddress, fnName, params, fromAdd
  *                and callbacks: submitted, confirmed, error.
  */
 endpoint.sendTransaction = function (aliasOrAddress, fnName, params, fromAddress, signMethod, options) {
+    sys.utils.concurrency.lock(fromAddress);
     options = options || {};
     params = params || [];
     var functionAbiDef = endpoint.utils.getFunctionDefFromABI(fnName, aliasOrAddress);
