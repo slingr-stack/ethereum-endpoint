@@ -204,7 +204,12 @@ endpoint.utils.internalSendTransaction = function (options) {
                 } catch (e) {
                     var error = {
                         errorMessage: 'Cannot calculate gas price',
-                        errorCode: 'gasEstimationFail'
+                        errorCode: 'gasEstimationFail',
+                    }
+                    if (typeof e == 'string') {
+                        error.errorMessage = error.errorMessage + ': ' + e;
+                    } else if (e.message) {
+                        error.errorMessage = error.errorMessage + ': ' + e.message;
                     }
                     sys.logs.warn('Cannot calculate gas price', e);
                     endpoint.utils.processErrorTransaction(msg, error);
@@ -220,7 +225,9 @@ endpoint.utils.internalSendTransaction = function (options) {
                         errorMessage: 'Cannot calculate gas',
                         errorCode: 'gasEstimationFail'
                     }
-                    if (e.message) {
+                    if (typeof e == 'string') {
+                        error.errorMessage = error.errorMessage + ': ' + e;
+                    } else if (e.message) {
                         error.errorMessage = error.errorMessage + ': ' + e.message;
                     }
                     sys.logs.warn('Cannot calculate gas', e);
@@ -236,7 +243,9 @@ endpoint.utils.internalSendTransaction = function (options) {
                     errorMessage: 'Cannot sign transaction with given account',
                     errorCode: 'invalidAccount'
                 };
-                if (e.message) {
+                if (typeof e == 'string') {
+                    error.errorMessage = error.errorMessage + ': ' + e;
+                } else if (e.message) {
                     error.errorMessage = error.errorMessage + ': ' + e.message;
                 }
                 sys.logs.warn('Cannot sign transaction', e);
@@ -251,7 +260,9 @@ endpoint.utils.internalSendTransaction = function (options) {
                     errorMessage: 'Cannot send transaction to the Ethereum network',
                     errorCode: 'invalidNetwork'
                 };
-                if (e.message) {
+                if (typeof e == 'string') {
+                    error.errorMessage = error.errorMessage + ': ' + e;
+                } else if (e.message) {
                     error.errorMessage = error.errorMessage + ': ' + e.message;
                 }
                 sys.logs.warn('Cannot send transaction to the Ethereum network', e);
@@ -456,6 +467,7 @@ endpoint.sendTransaction = function (aliasOrAddress, fnName, params, fromAddress
  *                and callbacks: submitted, confirmed, error.
  */
 endpoint.sendEther = function (aliasOrAddress, amount, fromAddress, signMethod, options) {
+    sys.utils.concurrency.lock(fromAddress);
     options = options || {};
     if (!fromAddress) {
         throw 'Address must be specified for this call.';
