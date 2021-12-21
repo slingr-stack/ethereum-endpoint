@@ -6,6 +6,7 @@ function isUnit(str) {
     var units = ["wei", "kwei", "mwei", "gwei", "szabo", "finney", "ether", "kether", "mether", "gether"];
     return units.indexOf(str) > 0;
 }
+
 endpoint.utils = {};
 
 /**
@@ -17,10 +18,10 @@ endpoint.utils = {};
  */
 endpoint.utils.isAddress = function (address) {
     if (!/^(0x)?[0-9a-f]{40}$/i.test(address)) {
-        // check if it has the basic requirements of an address
+// check if it has the basic requirements of an address
         return false;
     } else if (/^(0x)?[0-9a-fA-F]{40}$/.test(address)) {
-        // If it's all small caps or all all caps, return true
+// If it's all small caps or all all caps, return true
         return true;
     }
     return false;
@@ -60,16 +61,16 @@ endpoint.utils.getFunctionDefFromABI = function (fnName, aliasOrAddress) {
     return null;
 };
 
-endpoint.utils.processSubmittedTransaction = function(msg, res) {
-    sys.utils.concurrency.unlock(msg.options.from);
+endpoint.utils.processSubmittedTransaction = function (msg, res) {
+    globalUnlock(msg.options.from);
     if (msg.options.submitted) {
         var func = 'var callback = ' + msg.options.submitted + ';'
-            +'\ncallback(context.msg, context.res);';
+            + '\ncallback(context.msg, context.res);';
         sys.utils.script.eval(func, {msg: msg, res: res});
     }
-    // if there is a confirmed callback, we wait until the transaction is committed
+// if there is a confirmed callback, we wait until the transaction is committed
     if (msg.options.confirmed) {
-        // check status of transaction
+// check status of transaction
         var txOptions = {
             txHash: res.txHash
         };
@@ -78,7 +79,7 @@ endpoint.utils.processSubmittedTransaction = function(msg, res) {
             res: res
         };
         var txCallbacks = {
-            transactionConfirmed: function(receiptObj, data){
+            transactionConfirmed: function (receiptObj, data) {
                 var msg = data.msg;
                 var res = data.res;
                 var receipt = receiptObj.data;
@@ -87,7 +88,7 @@ endpoint.utils.processSubmittedTransaction = function(msg, res) {
                     '\ncallback(context.msg, context.res, context.receipt, context.events);';
                 sys.utils.script.eval(func, {msg: msg, res: res, receipt: receipt, events: events});
             },
-            transactionRejected: function(response, data){
+            transactionRejected: function (response, data) {
                 var msg = data.msg;
                 var res = data.res;
                 res.errorCode = response.errorCode;
@@ -109,10 +110,10 @@ endpoint.utils.processSubmittedTransaction = function(msg, res) {
     }
 };
 
-endpoint.utils.processDeclinedTransaction = function(msg, res) {
-    sys.utils.concurrency.unlock(msg.options.from);
+endpoint.utils.processDeclinedTransaction = function (msg, res) {
+    globalUnlock(msg.options.from);
     if (msg.options.error) {
-        if(!res){
+        if (!res) {
             res = {};
         }
         res.errorCode = 'txDeclined';
@@ -123,8 +124,8 @@ endpoint.utils.processDeclinedTransaction = function(msg, res) {
     }
 };
 
-endpoint.utils.processErrorTransaction = function(msg, res) {
-    sys.utils.concurrency.unlock(msg.options.from);
+endpoint.utils.processErrorTransaction = function (msg, res) {
+    globalUnlock(msg.options.from);
     if (msg.options.error) {
         var func = 'var callback = ' + msg.options.error + ';' +
             '\ncallback(context.msg, context.res);';
@@ -173,7 +174,7 @@ endpoint.utils.internalSendTransaction = function (options) {
                 options: options,
                 callbacks: {
                     approved: function (msg, res) {
-                        if (!res){
+                        if (!res) {
                             sys.logs.warn('Response is empty in approve callback from ' + pluginName);
                             return;
                         }
@@ -182,7 +183,7 @@ endpoint.utils.internalSendTransaction = function (options) {
                     declined: function (msg, res) {
                         app.endpoints[msg.endpointName].utils.processDeclinedTransaction(msg, res);
                     },
-                    error: function(msg, res) {
+                    error: function (msg, res) {
                         app.endpoints[msg.endpointName].utils.processErrorTransaction(msg, res);
                     }
                 }
@@ -271,7 +272,6 @@ endpoint.utils.internalSendTransaction = function (options) {
             }
             endpoint.utils.processSubmittedTransaction(msg, {txHash: res});
             break;
-
         default:
             throw 'Unsupported sign method';
     }
@@ -288,7 +288,7 @@ endpoint.utils.internalSendTransaction = function (options) {
  * @returns {*} a JSON with all contracts with their compiled code and ABI. If you specified
  *              contractName, it will only return the JSON for the given contract.
  */
-endpoint.compileSolidity = function(code, contractName, libraries) {
+endpoint.compileSolidity = function (code, contractName, libraries) {
     if (!code) {
         throw 'Code cannot be empty';
     }
@@ -298,11 +298,11 @@ endpoint.compileSolidity = function(code, contractName, libraries) {
             return str.indexOf(suffix, str.length - suffix.length) !== -1;
         };
         for (var key in res.contracts) {
-            if (endsWith(key, ':'+contractName)) {
+            if (endsWith(key, ':' + contractName)) {
                 return res.contracts[key];
             }
         }
-        throw 'Contract with name ['+contractName+'] not found in code';
+        throw 'Contract with name [' + contractName + '] not found in code';
     } else {
         return res.contracts;
     }
@@ -316,7 +316,7 @@ endpoint.compileSolidity = function(code, contractName, libraries) {
  * @param params an array with the params of the function
  * @returns {*} a string with the encoded function call
  */
-endpoint.encodeFunction = function(aliasOrAddress, fnName, params) {
+endpoint.encodeFunction = function (aliasOrAddress, fnName, params) {
     params = params || [];
     var functionAbiDef = endpoint.utils.getFunctionDefFromABI(fnName, aliasOrAddress);
     if (!functionAbiDef) {
@@ -324,7 +324,7 @@ endpoint.encodeFunction = function(aliasOrAddress, fnName, params) {
     }
     var data;
     try {
-        data = endpoint._encodedFunction({ fnAbi: functionAbiDef, params: params});
+        data = endpoint._encodedFunction({fnAbi: functionAbiDef, params: params});
     } catch (e) {
         throw 'There was a problem encoding params: ' + sys.exceptions.getMessage(e) + '. Code: ' + sys.exceptions.getCode(e);
     }
@@ -349,12 +349,12 @@ endpoint.callFunction = function (aliasOrAddress, fnName, params, fromAddress) {
     }
     var data;
     try {
-        data = endpoint._encodedFunction({ fnAbi: functionAbiDef, params: params});
+        data = endpoint._encodedFunction({fnAbi: functionAbiDef, params: params});
     } catch (e) {
         throw 'There was a problem encoding params: ' + sys.exceptions.getMessage(e) + '. Code: ' + sys.exceptions.getCode(e);
     }
     if (functionAbiDef['stateMutability'] !== 'view') {
-        throw 'The function ['+fnName+'] is not a view. Use sendTransaction() instead.';
+        throw 'The function [' + fnName + '] is not a view. Use sendTransaction() instead.';
     }
 
     var callObject = {
@@ -366,15 +366,15 @@ endpoint.callFunction = function (aliasOrAddress, fnName, params, fromAddress) {
         var data = endpoint.eth.call(callObject, 'latest');
         var decodedData;
         try {
-            decodedData = endpoint._decodeFunction({ fnAbi: functionAbiDef, data: data});
+            decodedData = endpoint._decodeFunction({fnAbi: functionAbiDef, data: data});
         } catch (e) {
-            sys.logs.error('Error decoding response of function ['+fnName+'] in contract ['+aliasOrAddress+']', e);
-            throw 'There was a problem decoding data returned by function ['+fnName+'] in contract ['+aliasOrAddress+']';
+            sys.logs.error('Error decoding response of function [' + fnName + '] in contract [' + aliasOrAddress + ']', e);
+            throw 'There was a problem decoding data returned by function [' + fnName + '] in contract [' + aliasOrAddress + ']';
         }
         return decodedData;
     } catch (err) {
-        sys.logs.error('Error calling function ['+fnName+'] in contract ['+aliasOrAddress+']', err);
-        throw 'There was an error calling function ['+fnName+'] in contract ['+aliasOrAddress+']';
+        sys.logs.error('Error calling function [' + fnName + '] in contract [' + aliasOrAddress + ']', err);
+        throw 'There was an error calling function [' + fnName + '] in contract [' + aliasOrAddress + ']';
     }
 };
 
@@ -398,7 +398,7 @@ endpoint.estimateTransaction = function (aliasOrAddress, fnName, params, fromAdd
     }
     var data;
     try {
-        data = endpoint._encodedFunction({ fnAbi: functionAbiDef, params: params});
+        data = endpoint._encodedFunction({fnAbi: functionAbiDef, params: params});
     } catch (e) {
         throw 'There was a problem encoding params: ' + sys.exceptions.getMessage(e) + '. Code: ' + sys.exceptions.getCode(e);
     }
@@ -421,7 +421,7 @@ endpoint.estimateTransaction = function (aliasOrAddress, fnName, params, fromAdd
  *                and callbacks: submitted, confirmed, error.
  */
 endpoint.sendTransaction = function (aliasOrAddress, fnName, params, fromAddress, signMethod, options) {
-    sys.utils.concurrency.lock(fromAddress);
+    globalLock(fromAddress);
     options = options || {};
     params = params || [];
     var functionAbiDef = endpoint.utils.getFunctionDefFromABI(fnName, aliasOrAddress);
@@ -430,7 +430,7 @@ endpoint.sendTransaction = function (aliasOrAddress, fnName, params, fromAddress
     }
     var data;
     try {
-        data = endpoint._encodedFunction({ fnAbi: functionAbiDef, params: params});
+        data = endpoint._encodedFunction({fnAbi: functionAbiDef, params: params});
     } catch (e) {
         throw 'There was a problem encoding params: ' + sys.exceptions.getMessage(e) + '. Code: ' + sys.exceptions.getCode(e);
     }
@@ -467,13 +467,16 @@ endpoint.sendTransaction = function (aliasOrAddress, fnName, params, fromAddress
  *                and callbacks: submitted, confirmed, error.
  */
 endpoint.sendEther = function (aliasOrAddress, amount, fromAddress, signMethod, options) {
-    sys.utils.concurrency.lock(fromAddress);
+    globalLock(fromAddress);
     options = options || {};
     if (!fromAddress) {
         throw 'Address must be specified for this call.';
     }
     if (!signMethod) {
         throw 'Sign method must be specified for this call.';
+    }
+    if (options.from) {
+        globalLock(options.from, 1000 * 60);
     }
     if (!options.nonce) {
         options.nonce = endpoint.eth.transactionCount(fromAddress, 'pending');
@@ -499,7 +502,7 @@ endpoint.sendEther = function (aliasOrAddress, amount, fromAddress, signMethod, 
  */
 endpoint.createContract = function (alias, compiledCode, abi, fromAddress, signMethod, options) {
     if (alias && endpoint.getContract(alias)) {
-        throw 'There is another contract with alias ['+alias+']';
+        throw 'There is another contract with alias [' + alias + ']';
     }
     if (!compiledCode) {
         throw 'Compiled code cannot be empty';
@@ -525,10 +528,10 @@ endpoint.createContract = function (alias, compiledCode, abi, fromAddress, signM
         abi: abi
     };
     if (compiledCode.indexOf('0x') != 0) {
-        compiledCode = '0x'+compiledCode;
+        compiledCode = '0x' + compiledCode;
     }
     options.data = compiledCode;
-    options.confirmed = function(msg, res, receipt) {
+    options.confirmed = function (msg, res, receipt) {
         app.endpoints[msg.endpointName]._registerContract({
             alias: msg.options.contractInfo.alias ? msg.options.contractInfo.alias : receipt.contractAddress,
             abi: JSON.parse(msg.options.contractInfo.abi),
@@ -547,7 +550,7 @@ endpoint.createContract = function (alias, compiledCode, abi, fromAddress, signM
  * @param contractAddress the Ethereum address of the contract
  * @param abi the ABI of the contract (string)
  */
-endpoint.registerContract = function(alias, contractAddress, abi) {
+endpoint.registerContract = function (alias, contractAddress, abi) {
     if (!contractAddress) {
         throw 'Address is required';
     }
@@ -574,7 +577,7 @@ endpoint.registerContract = function(alias, contractAddress, abi) {
  * @param aliasOrAddress the alias or address of the contract
  * @returns {*} the JSON of the contract
  */
-endpoint.getContract = function(aliasOrAddress) {
+endpoint.getContract = function (aliasOrAddress) {
     if (!aliasOrAddress) {
         throw 'Alias or address cannot be empty';
     }
@@ -595,7 +598,7 @@ endpoint.getContract = function(aliasOrAddress) {
  * @param aliasOrAddress the alias or address of the contract to remove
  * @returns {*} the contract removed
  */
-endpoint.removeContract = function(aliasOrAddress) {
+endpoint.removeContract = function (aliasOrAddress) {
     if (!aliasOrAddress) {
         throw 'Alias or address cannot be empty';
     }
@@ -611,7 +614,7 @@ endpoint.removeContract = function(aliasOrAddress) {
  *
  * @returns {string} the address of the created account
  */
-endpoint.createAccount = function() {
+endpoint.createAccount = function () {
     var res = endpoint._createAccount({});
     return endpoint.toChecksumAddress(res.address);
 };
@@ -623,7 +626,7 @@ endpoint.createAccount = function() {
  * @param privateKey the private key in hexadecimal
  * @returns {string} the address of the new account
  */
-endpoint.importAccount = function(privateKey) {
+endpoint.importAccount = function (privateKey) {
     if (!privateKey) {
         throw 'Private key cannot be empty';
     }
@@ -637,7 +640,7 @@ endpoint.importAccount = function(privateKey) {
  * @param address the address of the key to export
  * @returns {*} a map with fields `address` and `privateKey`
  */
-endpoint.exportAccount = function(address) {
+endpoint.exportAccount = function (address) {
     if (!address) {
         throw 'Address cannot be empty';
     }
@@ -671,7 +674,7 @@ endpoint.toChecksumAddress = function (address) {
 /**
  * Returns the network the endpoint is connected to.
  */
-endpoint.getNetwork = function() {
+endpoint.getNetwork = function () {
     return endpoint._configuration.networkUrl;
 };
 
@@ -724,3 +727,16 @@ var isObject = function (obj) {
 };
 
 var stringType = Function.prototype.call.bind(Object.prototype.toString);
+
+function globalLock(key, timeout) {
+    if (!timeout) timeout = 5000 * 60;
+    var timeSpent = 0;
+    while (!sys.storage.putIfAbsent(key, key, {ttl: 10 * 60 * 1000}) && timeSpent < timeout) {
+        sys.utils.script.wait(100);
+        timeSpent += 100;
+    }
+}
+
+function globalUnlock(key) {
+    sys.storage.remove(key);
+}
