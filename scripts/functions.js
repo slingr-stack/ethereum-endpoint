@@ -501,6 +501,7 @@ endpoint.sendEther = function (aliasOrAddress, amount, fromAddress, signMethod, 
  *                and callbacks: submitted, confirmed, error.
  */
 endpoint.createContract = function (alias, compiledCode, abi, fromAddress, signMethod, options) {
+    globalLock(fromAddress);
     if (alias && endpoint.getContract(alias)) {
         throw 'There is another contract with alias [' + alias + ']';
     }
