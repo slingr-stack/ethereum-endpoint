@@ -422,36 +422,41 @@ endpoint.estimateTransaction = function (aliasOrAddress, fnName, params, fromAdd
  */
 endpoint.sendTransaction = function (aliasOrAddress, fnName, params, fromAddress, signMethod, options) {
     globalLock(fromAddress);
-    options = options || {};
-    params = params || [];
-    var functionAbiDef = endpoint.utils.getFunctionDefFromABI(fnName, aliasOrAddress);
-    if (!functionAbiDef) {
-        throw 'Cannot find function [' + fnName + '] in ABI';
-    }
-    var data;
     try {
-        data = endpoint._encodedFunction({fnAbi: functionAbiDef, params: params});
+        options = options || {};
+        params = params || [];
+        var functionAbiDef = endpoint.utils.getFunctionDefFromABI(fnName, aliasOrAddress);
+        if (!functionAbiDef) {
+            throw 'Cannot find function [' + fnName + '] in ABI';
+        }
+        var data;
+        try {
+            data = endpoint._encodedFunction({fnAbi: functionAbiDef, params: params});
+        } catch (e) {
+            throw 'There was a problem encoding params: ' + sys.exceptions.getMessage(e) + '. Code: ' + sys.exceptions.getCode(e);
+        }
+        if (!fromAddress) {
+            throw 'Address must be specified for this call.';
+        }
+        if (!signMethod) {
+            throw 'Sign method must be specified for this call.';
+        }
+        if (functionAbiDef['stateMutability'] === 'view') {
+            throw 'This function is a view. Use the method callFunction() instead.';
+        }
+        if (!options.nonce) {
+            options.nonce = endpoint.eth.transactionCount(fromAddress, 'pending');
+        }
+        options.to = endpoint.utils.isAddress(aliasOrAddress) ? aliasOrAddress : endpoint.utils.getContractAddressByAlias(aliasOrAddress);
+        options.data = data;
+        options.netId = endpoint.net.version();
+        options.from = fromAddress;
+        options.signMethod = signMethod;
+        endpoint.utils.internalSendTransaction(options);
     } catch (e) {
-        throw 'There was a problem encoding params: ' + sys.exceptions.getMessage(e) + '. Code: ' + sys.exceptions.getCode(e);
+        globalUnlock(fromAddress);
+        throw e;
     }
-    if (!fromAddress) {
-        throw 'Address must be specified for this call.';
-    }
-    if (!signMethod) {
-        throw 'Sign method must be specified for this call.';
-    }
-    if (functionAbiDef['stateMutability'] === 'view') {
-        throw 'This function is a view. Use the method callFunction() instead.';
-    }
-    if (!options.nonce) {
-        options.nonce = endpoint.eth.transactionCount(fromAddress, 'pending');
-    }
-    options.to = endpoint.utils.isAddress(aliasOrAddress) ? aliasOrAddress : endpoint.utils.getContractAddressByAlias(aliasOrAddress);
-    options.data = data;
-    options.netId = endpoint.net.version();
-    options.from = fromAddress;
-    options.signMethod = signMethod;
-    endpoint.utils.internalSendTransaction(options);
 };
 
 /**
@@ -468,25 +473,27 @@ endpoint.sendTransaction = function (aliasOrAddress, fnName, params, fromAddress
  */
 endpoint.sendEther = function (aliasOrAddress, amount, fromAddress, signMethod, options) {
     globalLock(fromAddress);
-    options = options || {};
-    if (!fromAddress) {
-        throw 'Address must be specified for this call.';
+    try {
+        options = options || {};
+        if (!fromAddress) {
+            throw 'Address must be specified for this call.';
+        }
+        if (!signMethod) {
+            throw 'Sign method must be specified for this call.';
+        }
+        if (!options.nonce) {
+            options.nonce = endpoint.eth.transactionCount(fromAddress, 'pending');
+        }
+        options.to = endpoint.utils.isAddress(aliasOrAddress) ? aliasOrAddress : endpoint.utils.getContractAddressByAlias(aliasOrAddress);
+        options.value = amount;
+        options.netId = endpoint.net.version();
+        options.from = fromAddress;
+        options.signMethod = signMethod;
+        endpoint.utils.internalSendTransaction(options);
+    } catch (e) {
+        globalUnlock(fromAddress);
+        throw e;
     }
-    if (!signMethod) {
-        throw 'Sign method must be specified for this call.';
-    }
-    if (options.from) {
-        globalLock(options.from, 1000 * 60);
-    }
-    if (!options.nonce) {
-        options.nonce = endpoint.eth.transactionCount(fromAddress, 'pending');
-    }
-    options.to = endpoint.utils.isAddress(aliasOrAddress) ? aliasOrAddress : endpoint.utils.getContractAddressByAlias(aliasOrAddress);
-    options.value = amount;
-    options.netId = endpoint.net.version();
-    options.from = fromAddress;
-    options.signMethod = signMethod;
-    endpoint.utils.internalSendTransaction(options);
 };
 
 /**
@@ -502,46 +509,49 @@ endpoint.sendEther = function (aliasOrAddress, amount, fromAddress, signMethod, 
  */
 endpoint.createContract = function (alias, compiledCode, abi, fromAddress, signMethod, options) {
     globalLock(fromAddress);
-    if (alias && endpoint.getContract(alias)) {
-        throw 'There is another contract with alias [' + alias + ']';
+    try {
+        if (alias && endpoint.getContract(alias)) {
+            throw 'There is another contract with alias [' + alias + ']';
+        }
+        if (!compiledCode) {
+            throw 'Compiled code cannot be empty';
+        }
+        if (!abi) {
+            throw 'ABI cannot be empty';
+        }
+        if (!fromAddress) {
+            throw 'Address must be specified for this call.';
+        }
+        options = options || {};
+        if (!options.nonce) {
+            options.nonce = endpoint.eth.transactionCount(fromAddress, 'pending');
+        }
+        options.netId = endpoint.net.version();
+        options.from = fromAddress;
+        options.signMethod = signMethod;
+        options.originalConfirmedCallback = options.confirmed;
+        options.contractInfo = {
+            alias: alias,
+            abi: abi
+        };
+        if (compiledCode.indexOf('0x') != 0) {
+            compiledCode = '0x' + compiledCode;
+        }
+        options.data = compiledCode;
+        options.confirmed = function (msg, res, receipt) {
+            app.endpoints[msg.endpointName]._registerContract({
+                alias: msg.options.contractInfo.alias ? msg.options.contractInfo.alias : receipt.contractAddress,
+                abi: JSON.parse(msg.options.contractInfo.abi),
+                address: receipt.contractAddress
+            });
+            var func = 'var callback = ' + msg.options.originalConfirmedCallback + '; callback(context.msg, context.res, context.receipt);';
+            sys.utils.script.eval(func, {msg: msg, res: res, receipt: receipt});
+        };
+        endpoint.utils.internalSendTransaction(options);
+    } catch (e) {
+        globalUnlock(fromAddress);
+        throw e;
     }
-    if (!compiledCode) {
-        throw 'Compiled code cannot be empty';
-    }
-    if (!abi) {
-        throw 'ABI cannot be empty';
-    }
-    if (!fromAddress) {
-        throw 'Address must be specified for this call.';
-    }
-
-    options = options || {};
-
-    if (!options.nonce) {
-        options.nonce = endpoint.eth.transactionCount(fromAddress, 'pending');
-    }
-    options.netId = endpoint.net.version();
-    options.from = fromAddress;
-    options.signMethod = signMethod;
-    options.originalConfirmedCallback = options.confirmed;
-    options.contractInfo = {
-        alias: alias,
-        abi: abi
-    };
-    if (compiledCode.indexOf('0x') != 0) {
-        compiledCode = '0x' + compiledCode;
-    }
-    options.data = compiledCode;
-    options.confirmed = function (msg, res, receipt) {
-        app.endpoints[msg.endpointName]._registerContract({
-            alias: msg.options.contractInfo.alias ? msg.options.contractInfo.alias : receipt.contractAddress,
-            abi: JSON.parse(msg.options.contractInfo.abi),
-            address: receipt.contractAddress
-        });
-        var func = 'var callback = ' + msg.options.originalConfirmedCallback + '; callback(context.msg, context.res, context.receipt);';
-        sys.utils.script.eval(func, {msg: msg, res: res, receipt: receipt});
-    };
-    endpoint.utils.internalSendTransaction(options);
 };
 
 /**
