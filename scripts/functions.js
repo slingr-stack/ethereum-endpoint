@@ -758,10 +758,8 @@ function setNonce(address) {
     var lastNonce = sys.storage.get(address+'-nonce');
     if (lastNonce) {
         var newNonce = parseInt(lastNonce) + 1;
-        sys.logs.error('Nonce existed. New nonce: '+newNonce);
         return '0x'+newNonce.toString(16);
     } else {
-        sys.logs.error('Nonce didnt Exist. Calling transactionCount method');
         return endpoint.eth.transactionCount(address, 'pending');
     }
 }
