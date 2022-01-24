@@ -62,6 +62,7 @@ endpoint.utils.getFunctionDefFromABI = function (fnName, aliasOrAddress) {
 };
 
 endpoint.utils.processSubmittedTransaction = function (msg, res) {
+    sys.storage.put(msg.options.from+'-nonce', msg.data.nonce, {ttl: 2 * 60 * 1000})
     globalUnlock(msg.options.from);
     if (msg.options.submitted) {
         var func = 'var callback = ' + msg.options.submitted + ';'
@@ -111,6 +112,7 @@ endpoint.utils.processSubmittedTransaction = function (msg, res) {
 };
 
 endpoint.utils.processDeclinedTransaction = function (msg, res) {
+    sys.storage.remove(msg.options.from+'-nonce');
     globalUnlock(msg.options.from);
     if (msg.options.error) {
         if (!res) {
@@ -125,6 +127,7 @@ endpoint.utils.processDeclinedTransaction = function (msg, res) {
 };
 
 endpoint.utils.processErrorTransaction = function (msg, res) {
+    sys.storage.remove(msg.options.from+'-nonce');
     globalUnlock(msg.options.from);
     if (msg.options.error) {
         var func = 'var callback = ' + msg.options.error + ';' +
@@ -445,7 +448,7 @@ endpoint.sendTransaction = function (aliasOrAddress, fnName, params, fromAddress
             throw 'This function is a view. Use the method callFunction() instead.';
         }
         if (!options.nonce) {
-            options.nonce = endpoint.eth.transactionCount(fromAddress, 'pending');
+            options.nonce = setNonce(fromAddress);
         }
         options.to = endpoint.utils.isAddress(aliasOrAddress) ? aliasOrAddress : endpoint.utils.getContractAddressByAlias(aliasOrAddress);
         options.data = data;
@@ -482,7 +485,7 @@ endpoint.sendEther = function (aliasOrAddress, amount, fromAddress, signMethod, 
             throw 'Sign method must be specified for this call.';
         }
         if (!options.nonce) {
-            options.nonce = endpoint.eth.transactionCount(fromAddress, 'pending');
+            options.nonce = setNonce(fromAddress);
         }
         options.to = endpoint.utils.isAddress(aliasOrAddress) ? aliasOrAddress : endpoint.utils.getContractAddressByAlias(aliasOrAddress);
         options.value = amount;
@@ -524,7 +527,7 @@ endpoint.createContract = function (alias, compiledCode, abi, fromAddress, signM
         }
         options = options || {};
         if (!options.nonce) {
-            options.nonce = endpoint.eth.transactionCount(fromAddress, 'pending');
+            options.nonce = setNonce(fromAddress);
         }
         options.netId = endpoint.net.version();
         options.from = fromAddress;
@@ -678,7 +681,6 @@ endpoint.toChecksumAddress = function (address) {
             ret += address[i];
         }
     }
-
     return ret
 };
 
@@ -750,4 +752,16 @@ function globalLock(key, timeout) {
 
 function globalUnlock(key) {
     sys.storage.remove(key);
+}
+
+function setNonce(address) {
+    var lastNonce = sys.storage.get(address+'-nonce');
+    if (lastNonce) {
+        var newNonce = parseInt(lastNonce) + 1;
+        sys.logs.error('Nonce existed. New nonce: '+newNonce);
+        return '0x'+newNonce.toString(16);
+    } else {
+        sys.logs.error('Nonce didnt Exist. Calling transactionCount method');
+        return endpoint.eth.transactionCount(address, 'pending');
+    }
 }
