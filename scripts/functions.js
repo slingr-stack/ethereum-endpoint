@@ -90,12 +90,16 @@ endpoint.utils.processSubmittedTransaction = function (msg, res) {
                 sys.utils.script.eval(func, {msg: msg, res: res, receipt: receipt, events: events});
             },
             transactionRejected: function (response, data) {
+                sys.logs.error('TRANSACTION REJECTED ON ENPOINT');
+                sys.logs.error('ENDPOINT error.response: '+JSON.stringify(response));
+                sys.logs.error('ENDPOINT error.msg: '+JSON.stringify(data.msg));
+                sys.logs.error('ENDPOINT error.res: '+JSON.stringify(data.res));
                 var msg = data.msg;
                 var res = data.res;
-                res.errorCode = response.errorCode;
+                res.errorCode = response.data.errorCode;
                 delete response.errorCode;
-                res.error = response.error;
-                delete response.error;
+                res.errorMessage = response.data.errorMessage;
+                delete response.errorMessage;
                 var func = 'var callback = ' + msg.options.error + ';' +
                     '\ncallback(context.msg, context.res, context.response);';
                 sys.utils.script.eval(func, {msg: msg, res: res, response: response});
@@ -107,6 +111,13 @@ endpoint.utils.processSubmittedTransaction = function (msg, res) {
         if (msg.options.confirmationBlocks) {
             txOptions.confirmationBlocks = msg.options.confirmationBlocks;
         }
+        if (msg.data.nonce) {
+            txOptions.nonce = msg.data.nonce;
+        }
+        if (msg.options.from) {
+            txOptions.from = msg.options.from;
+        }
+        sys.logs.error('from: '+txOptions.from);
         app.endpoints[msg.endpointName]._confirmTransaction(txOptions, callbackData, txCallbacks);
     }
 };
@@ -239,6 +250,9 @@ endpoint.utils.internalSendTransaction = function (options) {
                     return;
                 }
             }
+            sys.logs.error('rawTx.gas '+rawTx.gas);
+            sys.logs.error('rawTx.gasPrice '+rawTx.gasPrice);
+
             try {
                 rawTx.netId = options.netId;
                 signedRawTx = endpoint._signTransaction(rawTx);
@@ -425,6 +439,7 @@ endpoint.estimateTransaction = function (aliasOrAddress, fnName, params, fromAdd
  */
 endpoint.sendTransaction = function (aliasOrAddress, fnName, params, fromAddress, signMethod, options) {
     globalLock(fromAddress);
+    sys.logs.error('starting sending tx process');
     try {
         options = options || {};
         params = params || [];

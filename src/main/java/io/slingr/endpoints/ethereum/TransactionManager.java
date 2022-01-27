@@ -21,6 +21,7 @@ public class TransactionManager {
     private final String EVENT_TX_CONFIRMED = "transactionConfirmed";
     private final String EVENT_TX_REJECTED = "transactionRejected";
     private final String EVENT_TX_REMOVED = "transactionRemoved";
+    private final String FROM = "from";
 
     private EthereumApiHelper ethereumApiHelper;
     private Events events;
@@ -118,10 +119,16 @@ public class TransactionManager {
             }
             // check which ones have to be sent and which ones have timed out
             List<String> txsToRemove = new ArrayList<>();
+
             for (String txHash : pendingTransactions.keySet()) {
                 Transaction tx = pendingTransactions.get(txHash);
                 long diff = block.getNumber() - tx.getBlockNumber();
                 if (Transaction.STATUS_CONFIRMED.equals(tx.getStatus()) && diff >= tx.getConfirmationBlocks()) {
+                    System.out.println("STARTING CONFIRM TX PROCESS");
+                    System.out.println("TX hash: " + txHash);
+                    System.out.println("TX FROM: " + tx.getFrom());
+                    System.out.println("TX nonce: " + tx.getNonce());
+
                     Json receipt = ethereumApiHelper.getTransactionReceipt(txHash);
                     if (receipt == null) {
                         // sometimes, for some reason, the tx has the status confirmed but then when we look for the
@@ -133,6 +140,32 @@ public class TransactionManager {
                     tx.setReceipt(receipt);
                     transactionsDs.update(tx.toJson());
                     txsToRemove.add(txHash);
+
+                    for (String txHashReplaced : pendingTransactions.keySet()) {
+                        Transaction txReplaced = pendingTransactions.get(txHashReplaced);
+                        System.out.println("tx to be replaced ");
+                        System.out.println("TX replaced hash: " + txHashReplaced);
+                        System.out.println("TX replaced FROM: " + txReplaced.getFrom());
+                        System.out.println("TX replaced nonce: " + txReplaced.getNonce());
+                        System.out.println("TX status: " + txReplaced.getStatus());
+
+                        if (tx.getFrom().equals(txReplaced.getFrom()) && !txHashReplaced.equals(txHash) && tx.getNonce().equals(txReplaced.getNonce())) {
+                            System.out.println("TX REPLACED");
+                            Json res = Json.map();
+                            res.set("receipt", txReplaced.getReceipt());
+                            res.set("errorCode", "replaced");
+                            res.set("errorMessage", String.format("Transaction was replaced with tx %s", txHash));
+                            sendEvent(EVENT_TX_REJECTED, txReplaced, res);
+                            txReplaced.setStatus(Transaction.STATUS_REPLACED);
+                            transactionsDs.update(txReplaced.toJson());
+                            txsToRemove.add(txHashReplaced);
+                        } else if (tx.getFrom().equals(txReplaced.getFrom()) && Integer.decode(txReplaced.getNonce()) < (Integer.decode(tx.getNonce()))) {
+                            System.out.println("TX NONCE IS SMALLER, REMOVING");
+                            txReplaced.setStatus(Transaction.STATUS_REMOVED);
+                            transactionsDs.update(txReplaced.toJson());
+                            txsToRemove.add(txHashReplaced);
+                        };
+                    }
                 } else if (Transaction.STATUS_PENDING.equals(tx.getStatus())) {
                     // check if the transaction has timed out
                     if (tx.getTimeout() < new Date().getTime()) {
@@ -150,6 +183,7 @@ public class TransactionManager {
             }
             // clean up sent transactions from memory
             for (String txHash : txsToRemove) {
+                System.out.println("Removing: "+txHash);
                 pendingTransactions.remove(txHash);
             }
         } finally {
@@ -195,10 +229,10 @@ public class TransactionManager {
         }
     }
 
-    public void registerTransaction(String txHash, String functionId, long timestamp, long confirmationTimeout, long confirmationBlocks) {
+    public void registerTransaction(String txHash, String nonce, String from, String functionId, long timestamp, long confirmationTimeout, long confirmationBlocks) {
         lock.lock();
         try {
-            Transaction tx = new Transaction(txHash, functionId, timestamp, confirmationTimeout, confirmationBlocks);
+            Transaction tx = new Transaction(txHash, nonce, from, functionId, timestamp, confirmationTimeout, confirmationBlocks);
             Json txJson = transactionsDs.save(tx.toJson());
             tx.setId(txJson.string(Transaction.ID));
             pendingTransactions.put(txHash, tx);

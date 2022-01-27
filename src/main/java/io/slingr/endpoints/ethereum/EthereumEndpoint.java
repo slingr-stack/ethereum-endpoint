@@ -303,7 +303,9 @@ public class EthereumEndpoint extends HttpEndpoint {
         long timestamp = new Date().getTime();
         String txHash = body.string(Transaction.TX_HASH);
         confirmationTimeout = confirmationTimeout + timestamp;
-        transactionManager.registerTransaction(txHash, request.getFunctionId(), timestamp, confirmationTimeout, confirmationBlocks);
+        String nonce = body.string(Transaction.NONCE);
+        String from = body.string(Transaction.FROM);
+        transactionManager.registerTransaction(txHash, nonce, from, request.getFunctionId(), timestamp, confirmationTimeout, confirmationBlocks);
         Json resp = Json.map();
         resp.set("status", "ok");
         return resp;
