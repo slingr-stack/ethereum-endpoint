@@ -125,7 +125,7 @@ endpoint.utils.processDeclinedTransaction = function (msg, res) {
             res = {};
         }
         res.errorCode = 'txDeclined';
-        res.error = 'Transaction was declined';
+        res.errorMessage = 'Transaction was declined';
         var func = 'var callback = ' + msg.options.error + ';' +
             '\ncallback(context.msg, context.res);';
         sys.utils.script.eval(func, {msg: msg, res: res});
