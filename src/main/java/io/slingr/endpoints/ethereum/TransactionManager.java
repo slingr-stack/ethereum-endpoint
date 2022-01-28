@@ -154,7 +154,6 @@ public class TransactionManager {
                             transactionsDs.update(txReplaced.toJson());
                             txsToRemove.add(txHashReplaced);
                         }
-                        ;
                     }
                 } else if (Transaction.STATUS_PENDING.equals(tx.getStatus())) {
                     // check if the transaction has timed out
