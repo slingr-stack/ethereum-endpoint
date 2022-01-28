@@ -186,7 +186,6 @@ public class Transaction {
                 .set(TIMESTAMP, this.getTimestamp())
                 .set(TIMEOUT, this.getTimeout())
                 .set(RECEIPT, this.getReceipt())
-
                 .setIfNotEmpty(APP, this.getApp())
                 .setIfNotEmpty(ENV, this.getEnv());
     }

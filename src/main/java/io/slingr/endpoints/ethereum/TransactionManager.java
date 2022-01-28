@@ -72,7 +72,7 @@ public class TransactionManager {
                     if (Transaction.STATUS_REMOVED.equals(tx.string(Transaction.STATUS))
                             || Transaction.STATUS_SENT.equals(tx.string(Transaction.STATUS))
                             || Transaction.STATUS_TIMEOUT.equals(tx.string(Transaction.STATUS))
-                    ) {
+                            || Transaction.STATUS_REPLACED.equals(tx.string(Transaction.STATUS))) {
                         long diff = new Date().getTime() - tx.longInteger(Transaction.TIMESTAMP);
                         if (diff > TRANSACTION_LIFE) {
                             transactionsDs.removeById(tx.string(Transaction.ID));
@@ -112,7 +112,7 @@ public class TransactionManager {
                 if (pendingTransactions.containsKey(txHash)) {
                     Transaction pendingTransaction = pendingTransactions.get(txHash);
                     pendingTransaction.setBlockHash(block.getHash());
-                    pendingTransaction.setBlockNumber(block.getNumber());
+                    pendingTransaction.setBlockNumber(block.getNumber());git log
                     pendingTransaction.setStatus(Transaction.STATUS_CONFIRMED);
                     transactionsDs.update(pendingTransaction.toJson());
                 }
@@ -124,11 +124,6 @@ public class TransactionManager {
                 Transaction tx = pendingTransactions.get(txHash);
                 long diff = block.getNumber() - tx.getBlockNumber();
                 if (Transaction.STATUS_CONFIRMED.equals(tx.getStatus()) && diff >= tx.getConfirmationBlocks()) {
-                    System.out.println("STARTING CONFIRM TX PROCESS");
-                    System.out.println("TX hash: " + txHash);
-                    System.out.println("TX FROM: " + tx.getFrom());
-                    System.out.println("TX nonce: " + tx.getNonce());
-
                     Json receipt = ethereumApiHelper.getTransactionReceipt(txHash);
                     if (receipt == null) {
                         // sometimes, for some reason, the tx has the status confirmed but then when we look for the
@@ -143,28 +138,23 @@ public class TransactionManager {
 
                     for (String txHashReplaced : pendingTransactions.keySet()) {
                         Transaction txReplaced = pendingTransactions.get(txHashReplaced);
-                        System.out.println("tx to be replaced ");
-                        System.out.println("TX replaced hash: " + txHashReplaced);
-                        System.out.println("TX replaced FROM: " + txReplaced.getFrom());
-                        System.out.println("TX replaced nonce: " + txReplaced.getNonce());
-                        System.out.println("TX status: " + txReplaced.getStatus());
-
                         if (tx.getFrom().equals(txReplaced.getFrom()) && !txHashReplaced.equals(txHash) && tx.getNonce().equals(txReplaced.getNonce())) {
-                            System.out.println("TX REPLACED");
+                            // check if there was a tx with the same nonce that was replaced
                             Json res = Json.map();
                             res.set("receipt", txReplaced.getReceipt());
                             res.set("errorCode", "replaced");
-                            res.set("errorMessage", String.format("Transaction was replaced with tx %s", txHash));
+                            res.set("errorMessage", String.format("Transaction was replaced with tx [%s]", txHash));
                             sendEvent(EVENT_TX_REJECTED, txReplaced, res);
                             txReplaced.setStatus(Transaction.STATUS_REPLACED);
                             transactionsDs.update(txReplaced.toJson());
                             txsToRemove.add(txHashReplaced);
                         } else if (tx.getFrom().equals(txReplaced.getFrom()) && Integer.decode(txReplaced.getNonce()) < (Integer.decode(tx.getNonce()))) {
-                            System.out.println("TX NONCE IS SMALLER, REMOVING");
+                            // check if there was a tx with a lower nonce that will never be mined
                             txReplaced.setStatus(Transaction.STATUS_REMOVED);
                             transactionsDs.update(txReplaced.toJson());
                             txsToRemove.add(txHashReplaced);
-                        };
+                        }
+                        ;
                     }
                 } else if (Transaction.STATUS_PENDING.equals(tx.getStatus())) {
                     // check if the transaction has timed out
@@ -183,7 +173,6 @@ public class TransactionManager {
             }
             // clean up sent transactions from memory
             for (String txHash : txsToRemove) {
-                System.out.println("Removing: "+txHash);
                 pendingTransactions.remove(txHash);
             }
         } finally {
