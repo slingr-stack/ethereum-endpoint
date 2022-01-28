@@ -112,7 +112,7 @@ public class TransactionManager {
                 if (pendingTransactions.containsKey(txHash)) {
                     Transaction pendingTransaction = pendingTransactions.get(txHash);
                     pendingTransaction.setBlockHash(block.getHash());
-                    pendingTransaction.setBlockNumber(block.getNumber());git log
+                    pendingTransaction.setBlockNumber(block.getNumber());
                     pendingTransaction.setStatus(Transaction.STATUS_CONFIRMED);
                     transactionsDs.update(pendingTransaction.toJson());
                 }
@@ -139,7 +139,7 @@ public class TransactionManager {
                     for (String txHashReplaced : pendingTransactions.keySet()) {
                         Transaction txReplaced = pendingTransactions.get(txHashReplaced);
                         if (tx.getFrom().equals(txReplaced.getFrom()) && !txHashReplaced.equals(txHash) && tx.getNonce().equals(txReplaced.getNonce())) {
-                            // check if there was a tx with the same nonce that was replaced
+                            // check if there is a tx with the same nonce that was replaced
                             Json res = Json.map();
                             res.set("receipt", txReplaced.getReceipt());
                             res.set("errorCode", "replaced");
@@ -149,7 +149,7 @@ public class TransactionManager {
                             transactionsDs.update(txReplaced.toJson());
                             txsToRemove.add(txHashReplaced);
                         } else if (tx.getFrom().equals(txReplaced.getFrom()) && Integer.decode(txReplaced.getNonce()) < (Integer.decode(tx.getNonce()))) {
-                            // check if there was a tx with a lower nonce that will never be mined
+                            // check if there is a tx with a lower nonce that will never be mined
                             txReplaced.setStatus(Transaction.STATUS_REMOVED);
                             transactionsDs.update(txReplaced.toJson());
                             txsToRemove.add(txHashReplaced);
