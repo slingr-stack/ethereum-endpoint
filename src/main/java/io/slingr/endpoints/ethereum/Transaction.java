@@ -14,6 +14,8 @@ public class Transaction {
     public final static String STATUS = "status";
     public final static String TIMESTAMP = "timestamp";
     public final static String TIMEOUT = "timeout";
+    public final static String NONCE = "nonce";
+    public final static String FROM = "from";
     public final static String CONFIRMATION_BLOCKS = "confirmationBlocks";
     public final static String RECEIPT = "receipt";
     public static final String STATUS_PENDING = "pending";
@@ -21,6 +23,7 @@ public class Transaction {
     public static final String STATUS_REMOVED = "removed";
     public static final String STATUS_SENT = "sent";
     public static final String STATUS_TIMEOUT = "timeout";
+    public static final String STATUS_REPLACED = "replaced";
     public static final String APP = "app";
     public static final String ENV = "env";
 
@@ -33,12 +36,17 @@ public class Transaction {
     private long timeout;
     private long confirmationBlocks;
     private String status = STATUS_PENDING;
+
+    private String nonce;
+    private String from;
     private String app;
     private String env;
     private Json receipt;
 
-    public Transaction(String txHash, String functionId, long timestamp, long timeout, long confirmationBlocks) {
+    public Transaction(String txHash, String nonce, String from, String functionId, long timestamp, long timeout, long confirmationBlocks) {
         this.txHash = txHash;
+        this.nonce = nonce;
+        this.from = from;
         this.functionId = functionId;
         this.timestamp = timestamp;
         this.timeout = timeout;
@@ -132,6 +140,22 @@ public class Transaction {
         this.receipt = receipt;
     }
 
+    public String getNonce() {
+        return nonce;
+    }
+
+    public void setNonce(String nonce) {
+        this.nonce = nonce;
+    }
+
+    public String getFrom() {
+        return from;
+    }
+
+    public void setFrom(String from) {
+        this.from = from;
+    }
+
     public String getApp() {
         return app;
     }
@@ -152,6 +176,8 @@ public class Transaction {
         return Json.map()
                 .set(ID, this.getId())
                 .set(TX_HASH, this.getTxHash())
+                .set(NONCE, this.getNonce())
+                .set(FROM, this.getFrom())
                 .set(BLOCK_HASH, this.getBlockHash())
                 .set(BLOCK_NUMBER, this.getBlockNumber())
                 .set(FUNCTION_ID, this.getFunctionId())
@@ -167,6 +193,8 @@ public class Transaction {
     public void fromJson(Json tx) {
         this.setId(tx.string(ID));
         this.setTxHash(tx.string(TX_HASH));
+        this.setNonce(tx.string(NONCE));
+        this.setFrom(tx.string(FROM));
         this.setBlockHash(tx.string(BLOCK_HASH));
         this.setBlockNumber(tx.longInteger(BLOCK_NUMBER));
         this.setFunctionId(tx.string(FUNCTION_ID));

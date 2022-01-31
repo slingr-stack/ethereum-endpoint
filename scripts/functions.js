@@ -92,10 +92,10 @@ endpoint.utils.processSubmittedTransaction = function (msg, res) {
             transactionRejected: function (response, data) {
                 var msg = data.msg;
                 var res = data.res;
-                res.errorCode = response.errorCode;
+                res.errorCode = response.data.errorCode;
                 delete response.errorCode;
-                res.error = response.error;
-                delete response.error;
+                res.errorMessage = response.data.errorMessage;
+                delete response.errorMessage;
                 var func = 'var callback = ' + msg.options.error + ';' +
                     '\ncallback(context.msg, context.res, context.response);';
                 sys.utils.script.eval(func, {msg: msg, res: res, response: response});
@@ -106,6 +106,12 @@ endpoint.utils.processSubmittedTransaction = function (msg, res) {
         }
         if (msg.options.confirmationBlocks) {
             txOptions.confirmationBlocks = msg.options.confirmationBlocks;
+        }
+        if (msg.data.nonce) {
+            txOptions.nonce = msg.data.nonce;
+        }
+        if (msg.options.from) {
+            txOptions.from = msg.options.from;
         }
         app.endpoints[msg.endpointName]._confirmTransaction(txOptions, callbackData, txCallbacks);
     }
@@ -119,7 +125,7 @@ endpoint.utils.processDeclinedTransaction = function (msg, res) {
             res = {};
         }
         res.errorCode = 'txDeclined';
-        res.error = 'Transaction was declined';
+        res.errorMessage = 'Transaction was declined';
         var func = 'var callback = ' + msg.options.error + ';' +
             '\ncallback(context.msg, context.res);';
         sys.utils.script.eval(func, {msg: msg, res: res});
