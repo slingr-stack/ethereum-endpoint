@@ -759,10 +759,8 @@ function globalUnlock(key) {
 }
 
 function getNonce(address, nonceCalculationMethod) {
-    sys.logs.error('GET nonceCalculationMethod: '+nonceCalculationMethod);
     var nonce = sys.storage.get("ethereum-endpoint-"+address+'-nonce');
     if (nonce && nonceCalculationMethod == 'calculationInEndpoint') {
-        sys.logs.error('Get nonce calculated in endpoint');
         return nonce;
     } else {
         return endpoint.eth.transactionCount(address, 'pending');
@@ -770,10 +768,8 @@ function getNonce(address, nonceCalculationMethod) {
 }
 
 function setNextNonce(address, nonce, nonceCalculationMethod) {
-    sys.logs.error('SET nonceCalculationMethod: '+nonceCalculationMethod);
     if (nonce && nonceCalculationMethod == 'calculationInEndpoint') {
         var nextNonce = parseInt(nonce) + 1;
-        sys.logs.error('Calculate next Nonce in endpoint: '+nextNonce);
         sys.storage.put("ethereum-endpoint-" + address + '-nonce', '0x' + nextNonce.toString(16), {ttl: 2 * 60 * 1000});
     }
 }
