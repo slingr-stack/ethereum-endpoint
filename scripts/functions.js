@@ -62,7 +62,7 @@ endpoint.utils.getFunctionDefFromABI = function (fnName, aliasOrAddress) {
 };
 
 endpoint.utils.processSubmittedTransaction = function (msg, res) {
-    sys.storage.put("ethereum-endpoint-"+msg.options.from+'-nonce', msg.data.nonce, {ttl: 2 * 60 * 1000})
+    setNextNonce(msg.options.from, msg.data.nonce, msg.options.nonceCalculationMethod);
     globalUnlock(msg.options.from);
     if (msg.options.submitted) {
         var func = 'var callback = ' + msg.options.submitted + ';'
@@ -93,9 +93,9 @@ endpoint.utils.processSubmittedTransaction = function (msg, res) {
                 var msg = data.msg;
                 var res = data.res;
                 res.errorCode = response.data.errorCode;
-                delete response.errorCode;
+                delete response.data.errorCode;
                 res.errorMessage = response.data.errorMessage;
-                delete response.errorMessage;
+                delete response.data.errorMessage;
                 var func = 'var callback = ' + msg.options.error + ';' +
                     '\ncallback(context.msg, context.res, context.response);';
                 sys.utils.script.eval(func, {msg: msg, res: res, response: response});
@@ -118,7 +118,6 @@ endpoint.utils.processSubmittedTransaction = function (msg, res) {
 };
 
 endpoint.utils.processDeclinedTransaction = function (msg, res) {
-    sys.storage.remove("ethereum-endpoint-"+msg.options.from+"-nonce");
     globalUnlock(msg.options.from);
     if (msg.options.error) {
         if (!res) {
@@ -133,7 +132,6 @@ endpoint.utils.processDeclinedTransaction = function (msg, res) {
 };
 
 endpoint.utils.processErrorTransaction = function (msg, res) {
-    sys.storage.remove("ethereum-endpoint-"+msg.options.from+"-nonce");
     globalUnlock(msg.options.from);
     if (msg.options.error) {
         var func = 'var callback = ' + msg.options.error + ';' +
@@ -454,7 +452,7 @@ endpoint.sendTransaction = function (aliasOrAddress, fnName, params, fromAddress
             throw 'This function is a view. Use the method callFunction() instead.';
         }
         if (!options.nonce) {
-            options.nonce = getNonce(fromAddress);
+            options.nonce = getNonce(fromAddress, options.nonceCalculationMethod);
         }
         options.to = endpoint.utils.isAddress(aliasOrAddress) ? aliasOrAddress : endpoint.utils.getContractAddressByAlias(aliasOrAddress);
         options.data = data;
@@ -491,7 +489,7 @@ endpoint.sendEther = function (aliasOrAddress, amount, fromAddress, signMethod, 
             throw 'Sign method must be specified for this call.';
         }
         if (!options.nonce) {
-            options.nonce = getNonce(fromAddress);
+            options.nonce = getNonce(fromAddress, options.nonceCalculationMethod);
         }
         options.to = endpoint.utils.isAddress(aliasOrAddress) ? aliasOrAddress : endpoint.utils.getContractAddressByAlias(aliasOrAddress);
         options.value = amount;
@@ -533,7 +531,7 @@ endpoint.createContract = function (alias, compiledCode, abi, fromAddress, signM
         }
         options = options || {};
         if (!options.nonce) {
-            options.nonce = getNonce(fromAddress);
+            options.nonce = getNonce(fromAddress, options.nonceCalculationMethod);
         }
         options.netId = endpoint.net.version();
         options.from = fromAddress;
@@ -760,12 +758,22 @@ function globalUnlock(key) {
     sys.storage.remove(key);
 }
 
-function getNonce(address) {
-    var lastNonce = sys.storage.get("ethereum-endpoint-"+address+'-nonce');
-    if (lastNonce) {
-        var newNonce = parseInt(lastNonce) + 1;
-        return '0x'+newNonce.toString(16);
+function getNonce(address, nonceCalculationMethod) {
+    sys.logs.error('GET nonceCalculationMethod: '+nonceCalculationMethod);
+    var nonce = sys.storage.get("ethereum-endpoint-"+address+'-nonce');
+    if (nonce && nonceCalculationMethod == 'calculationInEndpoint') {
+        sys.logs.error('Get nonce calculated in endpoint');
+        return nonce;
     } else {
         return endpoint.eth.transactionCount(address, 'pending');
+    }
+}
+
+function setNextNonce(address, nonce, nonceCalculationMethod) {
+    sys.logs.error('SET nonceCalculationMethod: '+nonceCalculationMethod);
+    if (nonce && nonceCalculationMethod == 'calculationInEndpoint') {
+        var nextNonce = parseInt(nonce) + 1;
+        sys.logs.error('Calculate next Nonce in endpoint: '+nextNonce);
+        sys.storage.put("ethereum-endpoint-" + address + '-nonce', '0x' + nextNonce.toString(16), {ttl: 2 * 60 * 1000});
     }
 }
