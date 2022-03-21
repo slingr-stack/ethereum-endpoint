@@ -88,7 +88,7 @@ public class EventsManager {
             try {
                 DataStoreResponse res = eventsDs.find();
                 List<Json> blocks = res.getItems();
-                int amountToRemove = blocks.size() - (MAX_BLOCKS * 2);
+                int amountToRemove = blocks.size() - (MAX_BLOCKS * 10);
                 if (amountToRemove > 0) {
                     appLogger.info(String.format("Removing [%s] old block events", amountToRemove));
                     for (int i = 0; i < amountToRemove; i++) {
@@ -227,7 +227,11 @@ public class EventsManager {
             if (diff >= confirmationBlocks) {
                 sendEvents(events, false);
                 events.string(EVENTS_SENT, "true");
-                eventsDs.update(events);
+                try {
+                    eventsDs.update(events);
+                } catch (Exception e) {
+                    appLogger.error(String.format("There were errors trying to update block events with hash [%s] as sent", events.string(EVENTS_BLOCK_HASH)), e);
+                }
                 pendingEvents.poll();
             }
         } while (!pendingEvents.isEmpty() && diff > confirmationBlocks);

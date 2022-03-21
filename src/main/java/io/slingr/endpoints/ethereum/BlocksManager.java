@@ -56,7 +56,7 @@ public class BlocksManager {
             try {
                 List<Json> newBlocks = new ArrayList<>();
                 Json lastBlock = getLastBlock();
-                if (StringUtils.equals(lastBlock.string("hash"), lastProcessedBlockHash)) {
+                if (lastBlock == null || StringUtils.equals(lastBlock.string("hash"), lastProcessedBlockHash)) {
                     // we don't have nothing to update
                     return;
                 }
