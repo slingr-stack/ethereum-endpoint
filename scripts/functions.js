@@ -62,7 +62,7 @@ endpoint.utils.getFunctionDefFromABI = function (fnName, aliasOrAddress) {
 };
 
 endpoint.utils.processSubmittedTransaction = function (msg, res) {
-    sys.storage.put("ethereum-endpoint-"+msg.options.from+'-nonce', msg.data.nonce, {ttl: 2 * 60 * 1000})
+    sys.storage.put("ethereum-endpoint-"+msg.options.from+'-nonce', msg.data.nonce, {ttl: 2 * 60 * 1000});
     globalUnlock(msg.options.from);
     if (msg.options.submitted) {
         var func = 'var callback = ' + msg.options.submitted + ';'
@@ -133,7 +133,6 @@ endpoint.utils.processDeclinedTransaction = function (msg, res) {
 };
 
 endpoint.utils.processErrorTransaction = function (msg, res) {
-    sys.storage.remove("ethereum-endpoint-"+msg.options.from+"-nonce");
     globalUnlock(msg.options.from);
     if (msg.options.error) {
         var func = 'var callback = ' + msg.options.error + ';' +
@@ -754,6 +753,8 @@ function globalLock(key, timeout) {
         sys.utils.script.wait(100);
         timeSpent += 100;
     }
+    if (timeSpent > timeout)
+        throw 'The lock is spending more time than the given timeout';
 }
 
 function globalUnlock(key) {
