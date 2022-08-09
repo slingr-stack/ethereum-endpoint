@@ -284,6 +284,18 @@
       "typeOptions": {
         "validation": "number"
       }
+    },
+    {
+      "label": "Polling interval",
+      "name": "pollingInterval",
+      "type": "text",
+      "description": "Time interval for polling new blocks in milliseconds",
+      "showLabel": true,
+      "required": true,
+      "defaultValue": "5000",
+      "typeOptions": {
+        "validation": "number"
+      }
     }
   ]
 }
