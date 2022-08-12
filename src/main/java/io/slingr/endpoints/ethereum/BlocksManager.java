@@ -23,7 +23,6 @@ public class BlocksManager {
 
     private final int MAX_BLOCKS = 12;
     private final int MAX_BLOCKS_DELAY = 360;
-    private final int POLLING_WAIT_TIME = 3000;
     private final int CLEANING_WAIT_TIME_MINUTES = 5;
     private final int MAX_SHUTDOWN_MINUTES = 5;
 
@@ -38,6 +37,7 @@ public class BlocksManager {
     private ScheduledExecutorService blockPollingExecutor;
     private ScheduledExecutorService cleanerExecutor;
     private Lock lock = new ReentrantLock();
+    private long pollingWaitTime;
 
     public BlocksManager(EthereumApiHelper ethereumApiHelper, AppLogs appLogger, DataStore blocksDs, EthereumEvent callbacks, Json config) {
         this.ethereumApiHelper = ethereumApiHelper;
@@ -45,6 +45,7 @@ public class BlocksManager {
         this.appLogger = appLogger;
         this.blocksDs = blocksDs;
         this.config = config;
+        this.pollingWaitTime = this.config.longInteger("pollingInterval", 5000);
     }
 
     public void start() {
@@ -68,7 +69,7 @@ public class BlocksManager {
                         && newBlocks.size() < MAX_BLOCKS_DELAY) {
                     lastBlock = getBlockByHash(parentHash);
                     if (lastBlock == null) {
-                        appLogger.warn("There were some issues polling fo new blocks. We will retry in ["+POLLING_WAIT_TIME+"] milliseconds");
+                        appLogger.warn("There were some issues polling fo new blocks. We will retry in ["+pollingWaitTime+"] milliseconds");
                         return;
                     }
                     newBlocks.add(lastBlock);
@@ -84,7 +85,7 @@ public class BlocksManager {
                 lock.unlock();
             }
         };
-        blockPollingExecutor.scheduleAtFixedRate(blockPollingTask, POLLING_WAIT_TIME, POLLING_WAIT_TIME, TimeUnit.MILLISECONDS);
+        blockPollingExecutor.scheduleAtFixedRate(blockPollingTask, pollingWaitTime, pollingWaitTime, TimeUnit.MILLISECONDS);
         // execute thread to clean blocks from the database
         cleanerExecutor = Executors.newSingleThreadScheduledExecutor();
         Runnable cleanerTask = () -> {
