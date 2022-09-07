@@ -206,6 +206,9 @@ endpoint.utils.internalSendTransaction = function (options) {
                 options: options
             };
             msg = JSON.parse(sys.utils.text.stringify(msg));
+            // TODO I commented out this because there is an issue with gas price and it
+            // TODO is not needed to estimate gas
+            /*
             if (!rawTx.gasPrice) {
                 try {
                     var gasPrice = endpoint.eth.gasPrice();
@@ -225,6 +228,7 @@ endpoint.utils.internalSendTransaction = function (options) {
                     return;
                 }
             }
+            */
             if (!rawTx.gas) {
                 try {
                     var estimatedGas = endpoint.eth.estimateGas(rawTx);
