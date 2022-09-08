@@ -206,29 +206,6 @@ endpoint.utils.internalSendTransaction = function (options) {
                 options: options
             };
             msg = JSON.parse(sys.utils.text.stringify(msg));
-            // TODO I commented out this because there is an issue with gas price and it
-            // TODO is not needed to estimate gas
-            /*
-            if (!rawTx.gasPrice) {
-                try {
-                    var gasPrice = endpoint.eth.gasPrice();
-                    rawTx['gasPrice'] = gasPrice;
-                } catch (e) {
-                    var error = {
-                        errorMessage: 'Cannot calculate gas price',
-                        errorCode: 'gasEstimationFail',
-                    }
-                    if (typeof e == 'string') {
-                        error.errorMessage = error.errorMessage + ': ' + e;
-                    } else if (e.message) {
-                        error.errorMessage = error.errorMessage + ': ' + e.message;
-                    }
-                    sys.logs.warn('Cannot calculate gas price', e);
-                    endpoint.utils.processErrorTransaction(msg, error);
-                    return;
-                }
-            }
-            */
             if (!rawTx.gas) {
                 try {
                     var estimatedGas = endpoint.eth.estimateGas(rawTx);
@@ -244,6 +221,25 @@ endpoint.utils.internalSendTransaction = function (options) {
                         error.errorMessage = error.errorMessage + ': ' + e.message;
                     }
                     sys.logs.warn('Cannot calculate gas', e);
+                    endpoint.utils.processErrorTransaction(msg, error);
+                    return;
+                }
+            }
+            if (!rawTx.gasPrice) {
+                try {
+                    var gasPrice = endpoint.eth.gasPrice();
+                    rawTx['gasPrice'] = gasPrice;
+                } catch (e) {
+                    var error = {
+                        errorMessage: 'Cannot calculate gas price',
+                        errorCode: 'gasEstimationFail',
+                    }
+                    if (typeof e == 'string') {
+                        error.errorMessage = error.errorMessage + ': ' + e;
+                    } else if (e.message) {
+                        error.errorMessage = error.errorMessage + ': ' + e.message;
+                    }
+                    sys.logs.warn('Cannot calculate gas price', e);
                     endpoint.utils.processErrorTransaction(msg, error);
                     return;
                 }
