@@ -56,20 +56,21 @@ public class BlocksManager {
             lock.lock();
             try {
                 List<Json> newBlocks = new ArrayList<>();
+                appLogger.info("Getting last blocks from ethereum network");
                 Json lastBlock = getLastBlock();
                 if (lastBlock == null || StringUtils.equals(lastBlock.string("hash"), lastProcessedBlockHash)) {
-                    // we don't have nothing to update
+                    // we don't have anything to update
                     return;
                 }
                 newBlocks.add(lastBlock);
                 String parentHash = lastBlock.string("parentHash");
-                // it can happen that the endpoint gets behind and we need to process many blocks at the same time
+                // it can happen that the endpoint gets behind, and we need to process many blocks at the same time
                 // we will do this for a maximum of 360 blocks, which would be like an hour
-                while (!lastBlocksHashes.contains(parentHash)
-                        && newBlocks.size() < MAX_BLOCKS_DELAY) {
+                while (!lastBlocksHashes.contains(parentHash) && newBlocks.size() < MAX_BLOCKS_DELAY) {
+                    appLogger.info(String.format("Getting block [%s] from ethereum network", parentHash));
                     lastBlock = getBlockByHash(parentHash);
                     if (lastBlock == null) {
-                        appLogger.warn("There were some issues polling fo new blocks. We will retry in ["+pollingWaitTime+"] milliseconds");
+                        appLogger.warn("There were some issues polling for new blocks. We will retry in [" + pollingWaitTime + "] milliseconds");
                         return;
                     }
                     newBlocks.add(lastBlock);
@@ -80,7 +81,8 @@ public class BlocksManager {
                     processNewBlock(newBlock);
                 }
             } catch (Exception e) {
-                appLogger.error("Error polling for new blocks", e);
+                appLogger.error(String.format("Error polling for new blocks: [%s]", e.getMessage()));
+                logger.error(String.format("Error polling for new blocks: [%s]", e.getMessage()), e);
             } finally {
                 lock.unlock();
             }
@@ -129,8 +131,7 @@ public class BlocksManager {
         newBlock.fromGethJson(newBlockJson);
         // check if the parent doesn't match with the last block, which means a chain reorganization happened
         // we also check that the parent is in the last blocks, otherwise it means we just got behind for too long
-        if (lastProcessedBlockHash != null && !StringUtils.equals(newBlock.getParentHash(), lastProcessedBlockHash)
-                && lastBlocksHashes.contains(newBlock.getParentHash())) {
+        if (lastProcessedBlockHash != null && !StringUtils.equals(newBlock.getParentHash(), lastProcessedBlockHash) && lastBlocksHashes.contains(newBlock.getParentHash())) {
             reorganizeChain(newBlock);
         }
         blocksDs.save(newBlock.toJson());
