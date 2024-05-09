@@ -56,7 +56,7 @@ public class BlocksManager {
             lock.lock();
             try {
                 List<Json> newBlocks = new ArrayList<>();
-                appLogger.info("Getting last blocks from ethereum network");
+                //appLogger.info("Getting last blocks from ethereum network");
                 Json lastBlock = getLastBlock();
                 if (lastBlock == null || StringUtils.equals(lastBlock.string("hash"), lastProcessedBlockHash)) {
                     // we don't have anything to update
@@ -81,7 +81,7 @@ public class BlocksManager {
                     processNewBlock(newBlock);
                 }
             } catch (Exception e) {
-                appLogger.error(String.format("Error polling for new blocks: [%s]", e.getMessage()));
+                appLogger.error(String.format("Error polling for new blocks: [%s] consider to decrease the pollingWaitTime: [%d]", e.getMessage(), pollingWaitTime));
                 logger.error(String.format("Error polling for new blocks: [%s]", e.getMessage()), e);
             } finally {
                 lock.unlock();

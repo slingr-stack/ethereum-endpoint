@@ -20,32 +20,32 @@ public class EthereumApiHelper {
 
     public Json getBlockByHash(String blockHash, boolean fullTransactions) {
         Json body = this.getBody("eth_getBlockByHash", Json.list().push(blockHash).push(fullTransactions));
-        logger.info("Get Block by Hash: {} fullTransactions: {}", blockHash, fullTransactions);
-        logger.info("Body: {}", body.toString());
+        logger.debug("Get Block by Hash: {} fullTransactions: {}", blockHash, fullTransactions);
+        logger.debug("Body: {}", body.toString());
         Json response = postAndGetResponse(body);
         return response != null ? response.json("result") : null;
     }
 
     public Json getBlockByNumber(String number, boolean fullTransactions) {
         Json body = this.getBody("eth_getBlockByNumber", Json.list().push(number).push(fullTransactions));
-        logger.info("Get Block by Number: {} fullTransactions: {}", number, fullTransactions);
-        logger.info("Body: {}", body.toString());
+        logger.debug("Get Block by Number: {} fullTransactions: {}", number, fullTransactions);
+        logger.debug("Body: {}", body.toString());
         Json response = postAndGetResponse(body);
         return response != null ? response.json("result") : null;
     }
 
     public Json getTransactionReceipt(String txHash) {
         Json body = this.getBody("eth_getTransactionReceipt", Json.list().push(txHash));
-        logger.info("Get transaction: {}", txHash);
-        logger.info("Body: {}", body.toString());
+        logger.debug("Get transaction: {}", txHash);
+        logger.debug("Body: {}", body.toString());
         Json response = postAndGetResponse(body);
         return response != null ? response.json("result") : null;
     }
 
     public List<Json> getLogsByBlock(String hash) {
         Json body = this.getBody("eth_getLogs", Json.list().push(Json.map().set("blockHash", hash)));
-        logger.info("Get logs by block: {}", hash);
-        logger.info("Body: {}", body.toString());
+        logger.debug("Get logs by block: {}", hash);
+        logger.debug("Body: {}", body.toString());
         Json response = postAndGetResponse(body);
         return response != null && response.jsons("result") != null ? response.jsons("result") : new ArrayList<>();
     }
